@@ -2,6 +2,7 @@ import { fetchGoods } from "../network";
 import { saveToCart, isInTheCart } from "../main";
 import CommodityCard from "./CommodityCard";
 import { useState, useEffect } from "react";
+//import { fetchGoods } from "../network";
 
 let items;
 
@@ -18,8 +19,8 @@ const CommodityList = ({ addToCart }) => {
       }
     };
 
-    fetchData(); // Call the async function to fetch data
-  }, []); // Empty dependency array ensures this runs only once on mount
+    fetchData();
+  }, []);
 
   return (
     <div

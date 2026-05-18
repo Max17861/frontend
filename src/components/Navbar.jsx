@@ -1,14 +1,34 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router";
+import { logoutUser } from "../network";
 
 const Navbar = ({ cartCount }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const navigate = useNavigate();
 
+  const token = localStorage.getItem("token");
+  const username = localStorage.getItem("username");
+
   const handleSearch = (e) => {
     e.preventDefault();
     if (searchTerm.trim()) {
       navigate(`/search?q=${searchTerm}`);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      if (token) {
+        await logoutUser(token);
+      }
+    } catch (err) {
+      console.error("Backend logout failed:", err);
+    } finally {
+      // clear local tokens and redirect
+      localStorage.removeItem("token");
+      localStorage.removeItem("username");
+      navigate("/");
+      window.location.reload(); // Refresh
     }
   };
 
@@ -43,15 +63,45 @@ const Navbar = ({ cartCount }) => {
           </div>
         </form>
 
-        {/* Cart Link  */}
-        <Link to="/cart" className="text-lg flex items-center relative">
-          Cart
-          {cartCount > 0 && (
-            <span className="ml-2 bg-yellow-400 text-gray-900 text-xs font-bold px-2 py-0.5 rounded-full">
-              {cartCount}
-            </span>
+        {/* Auth & Cart Navigation Links */}
+        <div className="flex items-center space-x-6">
+          {token ? (
+            <div className="flex items-center space-x-4">
+              <span className="text-sm text-gray-300">Hi, {username}</span>
+              <button
+                onClick={handleLogout}
+                className="bg-red-500 hover:bg-red-600 text-white px-3 py-1.2 rounded text-sm transition-colors"
+              >
+                Logout
+              </button>
+            </div>
+          ) : (
+            <div className="space-x-4 flex">
+              <Link
+                to="/login"
+                className="bg-blue-600 hover:bg-blue-700 px-3 py-1.5 rounded text-sm font-medium"
+              >
+                Sign In
+              </Link>
+              <Link
+                to="/register"
+                className="bg-blue-600 hover:bg-blue-700 px-3 py-1.5 rounded text-sm font-medium transition-colors"
+              >
+                Sign Up
+              </Link>
+            </div>
           )}
-        </Link>
+
+          {/* Cart Link  */}
+          <Link to="/cart" className="text-lg flex items-center relative">
+            Cart
+            {cartCount > 0 && (
+              <span className="ml-2 bg-yellow-400 text-gray-900 text-xs font-bold px-2 py-0.5 rounded-full">
+                {cartCount}
+              </span>
+            )}
+          </Link>
+        </div>
       </div>
     </nav>
   );

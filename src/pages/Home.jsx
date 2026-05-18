@@ -3,42 +3,52 @@ import CommodityList from "../components/CommodityList";
 import Navbar from "../components/Navbar";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
+import { fetchDbCart, addToDbCart } from "../network";
 
 const Home = () => {
   const [cart, setCart] = useState([]);
-
-  // Load cart from localStorage when the component mounts
+  const token = localStorage.getItem("token"); // Retrieve auth. token
+  const totalItems = Array.isArray(cart)
+    ? cart.reduce((sum, item) => sum + item.quantity, 0)
+    : 0;
+  // Fetch a cart from Django Database
   useEffect(() => {
-    const storedCart = JSON.parse(localStorage.getItem("cart")) || [];
-    setCart(storedCart);
-  }, []);
-
-  // Add an item to the cart
-  const addToCart = (item) => {
-    setCart((prevCart) => {
-      const existingItem = prevCart.find((cartItem) => cartItem.id === item.id);
-      let updatedCart;
-
-      if (existingItem) {
-        // Increase quantity if item already exists
-        updatedCart = prevCart.map((cartItem) =>
-          cartItem.id === item.id
-            ? { ...cartItem, quantity: cartItem.quantity + 1 }
-            : cartItem,
-        );
-      } else {
-        // Add new item to cart with quantity 1
-        updatedCart = [...prevCart, { ...item, quantity: 1 }];
+    const getInitialCart = async () => {
+      if (token) {
+        try {
+          const dbCartData = await fetchDbCart(token);
+          if (dbCartData) {
+            setCart(dbCartData);
+          }
+        } catch (err) {
+          console.error("Could not load cart data from backend:", err);
+          setCart([]);
+        }
       }
+    };
+    getInitialCart();
+  }, [token]);
 
-      localStorage.setItem("cart", JSON.stringify(updatedCart)); // Save to localStorage
-      return updatedCart;
-    });
+  // Add item directly to the Database
+  const addToCart = async (item) => {
+    if (!token) {
+      alert("Please log in to append items to your cart.");
+      return;
+    }
+
+    try {
+      const updatedCart = await addToDbCart(item.id, token);
+      if (updatedCart) {
+        setCart(updatedCart);
+      }
+    } catch (err) {
+      console.error("Could not add item to backend cart:", err);
+    }
   };
 
   return (
     <div className="bg-gray-900 text-white min-h-screen">
-      <Navbar cartCount={cart.length} />
+      <Navbar cartCount={totalItems} />
       <Header />
       <main className="container mx-auto p-4">
         <h1 className="text-4xl font-bold text-center my-6">E-Shop</h1>
